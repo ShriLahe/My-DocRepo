@@ -7,6 +7,6 @@ response = client.describe_instances()
 #print (response['Reservations'])
 
 for Prntrevs in response ['Reservations']:
-    for Prntins in Prntrevs ['Instances']:
-        print(Prntins['InstanceId'])
+    for Prntinst in Prntrevs ['Instances']:
+        print(Prntinst['InstanceId'])
 
