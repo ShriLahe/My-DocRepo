@@ -1,0 +1,13 @@
+version: "3"
+services:
+  webapp1:
+    image: nginx
+    ports:
+      - "8000:80"
+      #done 1 container webapp1 , now for 2nd container
+  webapp2:
+    images: nginx
+    ports:
+      - "8001:80"
+#If we create again with diff port ex. 8002:80  with same name webapp2, it will delete 1st one and recreate new(webapp2).
+  
