@@ -1,0 +1,33 @@
+{  
+    "Resources": {
+        "MyEC2Instance" : {
+            "Type" : "AWS::EC2::Instance",
+            "Properties" : {
+               "ImageId" : "ami-0e742cca61fb65051",
+               "InstanceType" : "t2.micro",
+               "KeyName" : "terraform",
+               "Tags" : [
+                {"Key" : "Name", "Value" : "WebServer"} 
+               ]
+
+            }
+         }
+    },
+    "Outputs" : {
+        "InstanceID" : {
+          "Description": "The Instance ID",  
+          "Value" : { "Ref" : "MyEC2Instance" }
+        },
+        "PublicDnsName" : {
+            "Description": "The Public Dns Name",  
+            "Value" : { "Ref" : "MyEC2Instance" }
+        },
+        "PublicIp" : {
+            "Description": "The Public IP",  
+            "Value" : { "Ref" : "MyEC2Instance" }
+        }
+
+
+    }
+    
+}
