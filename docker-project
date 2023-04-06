@@ -1,9 +1,10 @@
 version: "3"
 services:
   web:
-    build: .
+    build: .      //will check Dockerfile and Build image
     ports:
-      - "5000:5000"
+      - "5000:5000"     //host m/c 5000 port will match with container 5000 port
+      image: shrilahe/mypythonimage:newimg     //tag for newly build image to push on docker hub
 
   radis:
     image: "radis:alpine"
