@@ -1,17 +1,43 @@
 version: "3"
 services:
   web:
-    build: .      //will check Dockerfile and Build image
+    build: .      //will check Dockerfile in current dir and Build image
+      #context: /tmp   //If docker file on diff location
+      #dockerfile: Dockerfile
+      #args:
+      #  - PYTHON_VERSION=3.4-alpine     // if we want to use argument in Dockerfile for Version
     ports:
       - "5000:5000"     //host m/c 5000 port will match with container 5000 port
       image: shrilahe/mypythonimage:newimg     //tag for newly build image to push on docker hub
 
+    environment:        //we can define environment variable also in docker compose
+      - Name:Shree
+      - ADD=Pune
+    #env_file:          //we can use file also with env_file, and path of file
+    # - env.txt
+
+
+      volumes:
+        - myredisdata:/data       //attac volume which one created @below
+      networks:
+        - appnetworks     //this for web container  
+
   radis:
     image: "radis:alpine"
+
+networks:
+  appnetwork:
+  appnetwork2:    //this will create network
+
+volumes:
+  myredisdata:
+  myredisdata1:
+
 ======================================
 Docker file
 vi Dockerfile
-FROM python:3.4
+#ARG PYTHON_VERSION    --for version from Docker-compose file, it comes befor FROM
+FROM python:3.4     #FROM python:PYTHON_VERSION
 ADD ./code        //will copy files (app.py) from current dir to /code dir 
 WORKDIR /code
 RUN pipi nstall -r requirnment.txt   //requirnment.txt  this is for package installation for python
