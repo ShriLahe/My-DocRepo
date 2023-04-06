@@ -1,0 +1,23 @@
+version: "3"
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+
+  radis:
+    image: "radis:alpine"
+======================================
+Docker file
+vi Dockerfile
+FROM python:3.4
+ADD ./code        //will copy files (app.py) from current dir to /code dir 
+WORKDIR /code
+RUN pipi nstall -r requirnment.txt   //requirnment.txt  this is for package installation for python
+CMD ["python", app.py""]       //this is application file
+======================================
+vi requirnment.txt
+flask
+redis
+======================================
+app.py   -- application file from docker document
