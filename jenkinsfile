@@ -1,0 +1,32 @@
+pipeline {
+  agent any
+  parameters {
+    string(name: 'VPC_CIDR', defaultValue: '10.0.0.0/16', description: 'VPC CIDR range')
+    string(name: 'PUBLIC_SUBNET_1_CIDR', defaultValue: '10.0.1.0/24', description: 'Public Subnet 1 CIDR range')
+    string(name: 'PUBLIC_SUBNET_2_CIDR', defaultValue: '10.0.2.0/24', description: 'Public Subnet 2 CIDR range')
+    string(name: 'PRIVATE_SUBNET_1_CIDR', defaultValue: '10.0.3.0/24', description: 'Private Subnet 1 CIDR range')
+    string(name: 'PRIVATE_SUBNET_2_CIDR', defaultValue: '10.0.4.0/24', description: 'Private Subnet 2 CIDR range')
+  }
+  stages {
+    stage('Checkout Code') {
+      steps {
+        checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/<user>/<repo>.git']]])
+      }
+    }
+    stage('Terraform Init') {
+      steps {
+        sh 'terraform init'
+      }
+    }
+    stage('Terraform Plan') {
+      steps {
+        sh 'terraform plan'
+      }
+    }
+    stage('Terraform Apply') {
+      steps {
+        sh "terraform apply -var 'vpc_cidr=${params.VPC_CIDR}' -var 'public_subnet_1_cidr=${params.PUBLIC_SUBNET_1_CIDR}' -var 'public_subnet_2_cidr=${params.PUBLIC_SUBNET_2_CIDR}' -var 'private_subnet_1_cidr=${params.PRIVATE_SUBNET_1_CIDR}' -var 'private_subnet_2_cidr=${params.PRIVATE_SUBNET_2_CIDR}'"
+      }
+    }
+  }
+}
