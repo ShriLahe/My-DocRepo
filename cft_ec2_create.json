@@ -5,7 +5,7 @@
             "Properties" : {
                "ImageId" : "ami-0e742cca61fb65051",
                "InstanceType" : "t2.micro",
-               "KeyName" : "mycftkey",
+               "KeyName" : "terraform",
                "Tags" : [
                 {"Key" : "Name", "Value" : "WebServer"} 
                ]
@@ -18,13 +18,13 @@
           "Description": "The Instance ID",  
           "Value" : { "Ref" : "MyEC2Instance" }
         },
-        "PublicDnsName" : {
+        "PublicDNS" : {
             "Description": "The Public Dns Name",  
-            "Value" : { "Ref" : "MyEC2Instance" }
+            "Value" : { "Fn::GetAtt" : [ "MyEC2Instance", "PublicDnsName" ] }
         },
         "PublicIp" : {
             "Description": "The Public IP",  
-            "Value" : { "Ref" : "MyEC2Instance" }
+            "Value" : { "Fn::GetAtt" : [ "MyEC2Instance", "PublicIp" ] }
         }
 
 
