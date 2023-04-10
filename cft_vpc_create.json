@@ -4,10 +4,47 @@
             "Type" : "AWS::EC2::VPC",
             "Properties" : {
                "CidrBlock" : "10.0.0.0/16",
-               "Tags" : [ 
-                  {"Key" : "Name", "Value" : "WebServer"} 
-               ]
+               "Tags" : [ {"Key" : "Name", "Value" : "WebServer"} ]
             }
-         }
+        },
+       "Subnet1" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "myVPC" },
+                "CidrBlock" : "10.0.1.0/24",
+                "Tags" : [ {"Key" : "Name", "Value" : "Sub1" } ]
+            }
+        },
+        "Subnet2" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "myVPC" },
+                "CidrBlock" : "10.0.2.0/24",
+                "Tags" : [ {"Key" : "Name", "Value" : "Sub2" } ]
+            }
+        },
+        "Subnet3" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "myVPC" },
+                "CidrBlock" : "10.0.3.0/24",
+                "Tags" : [ {"Key" : "Name", "Value" : "Sub3" } ]
+            }
+        },
+        "InternetGateway" : {
+            "Type" : "AWS::EC2::InternetGateway",
+            "Properties" : {
+              "Tags" : [ {"Key" : "Name", "Value" : "IGW" } ]
+            }
+        },
+  
+        "AttachGateway" : {
+            "Type" : "AWS::EC2::VPCGatewayAttachment",
+                "Properties" : {
+                "VpcId" : { "Ref" : "myVPC" },
+                "InternetGatewayId" : { "Ref" : "InternetGateway" }
+                }
+        }
     }
-}    
+}
+    
