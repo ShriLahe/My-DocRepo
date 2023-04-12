@@ -32,7 +32,7 @@ resource "aws_subnet" "subnet2" {
 }
 
 
-resources   "aws_internet_gateway"  "VPC_IGW" {
+resource "aws_internet_gateway"  "VPC_IGW" {
     vpd_id = aws.myvpc.id
 
     tags = {
@@ -41,7 +41,7 @@ resources   "aws_internet_gateway"  "VPC_IGW" {
 }
 
 
-resources "aws_lb" "vpc_ALB" {
+resource "aws_lb" "vpc_ALB" {
     name = "Hi-tech-ALP"
     internal = false
     load_balancer_type = "application"
