@@ -24,13 +24,13 @@ variable = "sub_cidr1" {
 
 }
 
-variable "azs-a" {
+variable = "azs-a" {
  type        = string
  description = "Availability Zones"
  default     = "ap-south-1a"
 }
 
-variable "azs-b" {
+variable = "azs-b" {
  type        = string
  description = "Availability Zones"
  default     = "ap-south-1b"

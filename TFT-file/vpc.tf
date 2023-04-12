@@ -17,7 +17,7 @@ resource "aws_subnet" "subnet1" {
 
 
     tags = {
-        Name = "Public-Sub1"
+        Name = "Subnet1a"
     }
 }
 
@@ -25,6 +25,10 @@ resource "aws_subnet" "subnet2" {
     cidr_block = "var.sub_cidr2"
     vpd_id = aws.myvpc.id
     availability_zone = "var.azs-b"
+
+    tags = {
+        Name = "Subnet2b"
+    }
 }
 
 
