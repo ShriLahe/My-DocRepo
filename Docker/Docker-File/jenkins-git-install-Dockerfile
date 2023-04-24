@@ -13,3 +13,14 @@ EXPOSE 8080
 
 # Start Jenkins service
 CMD ["/bin/bash", "-c", "service jenkins start && tail -f /var/log/jenkins/jenkins.log"]
+
+
+#Explanation
+#
+#FROM ubuntu:latest: Use the latest Ubuntu image as the base image.
+#RUN apt-get update && apt-get install -y wget gnupg2: Update the package list and install wget and gnupg2.
+#RUN wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | apt-key add -: Download the Jenkins repository key and add it to the keyring.
+#RUN echo 'deb https://pkg.jenkins.io/debian-stable binary/' >> /etc/apt/sources.list.d/jenkins.list: Add the Jenkins repository to the sources list.
+#RUN apt-get update && apt-get install -y default-jdk git jenkins: Update the package list again and install default-jdk, git, and jenkins.
+#EXPOSE 8080: Expose the default Jenkins port.
+#CMD ["/bin/bash", "-c", "service jenkins start && tail -f /var/log/jenkins/jenkins.log"]: Start the Jenkins service and tail the Jenkins log to keep the container running. 
