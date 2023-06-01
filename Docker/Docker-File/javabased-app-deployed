@@ -1,0 +1,25 @@
+# Use a base image with Java installed
+FROM openjdk:11
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the application JAR file into the container
+COPY target/my-application.jar .
+
+# Set the command to run when the container starts
+CMD ["java", "-jar", "my-application.jar"]
+
+
+FROM openjdk:11
+WORKDIR /app
+COPY target/my-applicition.jar .
+CMD ["java" , "-jar","my-application.jar"]
+
+To build a Docker image from this Dockerfile, navigate to the directory containing the Dockerfile and run the following command:
+#docker build -t my-application-app .
+This will create a Docker image with the tag my-application-image based on the instructions in the Dockerfile.
+
+Once the image is built, you can run a container using the image with the following command:
+#docker run my-application-app
+This will start a container from the image, and your Java application will run inside the container.
