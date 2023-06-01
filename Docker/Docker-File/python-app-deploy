@@ -1,0 +1,30 @@
+# Use a base image with Python installed
+FROM python:3.9
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the requirements file and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application files into the container
+COPY . .
+
+# Set the command to run when the container starts
+CMD ["python", "app.py"]
+
+
+Dockerfile
+=======================================
+FROM python:3.9
+WORKDIR /app
+WORKDIR /app
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "app.py"]
+========================================
+
+#docker build -t my-application-image .
+
+#docker run my-application-image
