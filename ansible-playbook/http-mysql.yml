@@ -1,0 +1,26 @@
+---
+- name: Install and configure services
+  hosts: target_host  # Replace with your target host or group of hosts
+  become: yes
+  tasks:
+    - name: Install httpd package
+      package:
+        name: httpd
+        state: present
+
+    - name: Start httpd service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Install MySQL package
+      package:
+        name: mysql-server
+        state: present
+
+    - name: Start MySQL service
+      service:
+        name: mysql
+        state: started
+        enabled: yes

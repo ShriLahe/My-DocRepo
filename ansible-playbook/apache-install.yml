@@ -1,0 +1,15 @@
+---
+- name: Install and configure Apache HTTP Server
+  hosts: target_host  # Replace with your target host or group of hosts
+  become: yes
+  tasks:
+    - name: Install httpd package
+      package:
+        name: httpd
+        state: present
+
+    - name: Start httpd service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
