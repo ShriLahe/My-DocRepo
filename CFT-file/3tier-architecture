@@ -1,0 +1,473 @@
+Parameters:
+  VPCCIDR:
+    Description: Enter CIDR notation for VPC
+    Type: String
+    Default: 10.10.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Enter the ID of the Public Subnet where the NAT Gateway will be created.
+    Type: String
+    Default: 10.10.1.0/24
+
+  PublicSubnet2CIDR:
+    Description: Enter the ID of the second Public Subnet.
+    Type: String
+    Default: 10.10.2.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Enter the CIDR for Private Subnet 1.
+    Type: String
+    Default: 10.10.3.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Enter the CIDR for Private Subnet 2.
+    Type: String
+    Default: 10.10.4.0/24
+
+  PrivateSubnet3CIDR:
+    Description: Enter the CIDR for Private Subnet 3.
+    Type: String
+    Default: 10.10.5.0/24
+
+  PrivateSubnet4CIDR:
+    Description: Enter the CIDR for Private Subnet 4.
+    Type: String
+    Default: 10.10.6.0/24
+
+  ChineloKeyPair:
+    Description: EC2 Key Pair for SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    DeletionPolicy: Delete
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: ChineloCloudFormation
+
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    DeletionPolicy: Delete
+
+  InternetGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1A:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+
+  PublicSubnet2B:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1A
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2B
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet3CIDR
+      MapPublicIpOnLaunch: false
+
+  PrivateSubnet4:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet4CIDR
+      MapPublicIpOnLaunch: false
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref VPC
+
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet2
+
+  PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet3
+
+  PrivateSubnet4RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet4
+
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
+    Properties:
+      GroupName: BastionSecurityGroup
+      GroupDescription: Allow SSH access from trusted IPs
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: <YOUR IP GOES HERE>/32
+
+  WebALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
+    Properties:
+      GroupName: WebALBSecurityGroup
+      GroupDescription: Allow HTTP traffic from the internet
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Delete
+    Properties:
+      GroupName: InstanceSecurityGroup
+      GroupDescription: Allow HTTP (port 80) from WebALB and SSH (port 22) from Bastion
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref WebALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          SourceSecurityGroupId: !Ref WebALBSecurityGroup
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  BastionHost:
+    Type: AWS::EC2::Instance
+    DeletionPolicy: Delete
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref ChineloKeyPair
+      ImageId: ami-0f34c5ae932e6f0e4 # YOU CAN ADJUST AMI BASED ON YOUR REQUIREMENTS
+      SubnetId: !Ref PublicSubnet1A
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroup
+
+  ChineloLaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    DeletionPolicy: Delete
+    Properties:
+      LaunchTemplateName: ChineloAutoScaling
+      LaunchTemplateData:
+        KeyName: !Ref ChineloKeyPair
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            AssociatePublicIpAddress: true
+            DeleteOnTermination: true
+            Groups:
+              - !Ref InstanceSecurityGroup
+        ImageId: ami-0f34c5ae932e6f0e4 # YOU CAN ADJUST AMI BASED ON YOUR REQUIREMENTS
+        InstanceType: t2.micro
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install httpd -y
+            systemctl start httpd
+            systemctl enable httpd
+            aws s3 cp s3://<YOUR S3 BUCKET NAME GOES HERE> /var/www/html --recursive
+
+  AutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    DeletionPolicy: Delete
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref ChineloLaunchTemplate
+        Version: !GetAtt ChineloLaunchTemplate.LatestVersionNumber
+      MaxSize: '6'
+      MinSize: '2'
+      DesiredCapacity: '2'
+      HealthCheckType: ELB
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1A
+        - !Ref PublicSubnet2B
+      MetricsCollection:
+        - Granularity: 1Minute
+      TargetGroupARNs:
+        - !Ref WebALBTargetGroup 
+
+  ScalingPolicy77:
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+    DeletionPolicy: Delete
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      ScalingAdjustment: '1'
+
+  PrivateLaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    DeletionPolicy: Delete
+    Properties:
+      LaunchTemplateName: PrivateAutoScaling
+      LaunchTemplateData:
+        KeyName: !Ref ChineloKeyPair
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            DeleteOnTermination: true
+            Groups:
+              - !Ref InstanceSecurityGroup
+        ImageId: ami-0f34c5ae932e6f0e4 # YOU CAN ADJUST AMI BASED ON YOUR REQUIREMENTS
+        InstanceType: t2.micro
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install httpd -y
+            systemctl start httpd
+            systemctl enable httpd
+            aws s3 cp s3://<YOUR S3 BUCKET NAME GOES HERE> /var/www/html --recursive
+
+  PrivateAutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    DeletionPolicy: Delete
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref PrivateLaunchTemplate
+        Version: !GetAtt PrivateLaunchTemplate.LatestVersionNumber
+      MaxSize: '6'
+      MinSize: '2'
+      DesiredCapacity: '2'
+      HealthCheckType: ELB
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      MetricsCollection:
+        - Granularity: 1Minute
+
+  ScalingPolicyPrivate:
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+    DeletionPolicy: Delete
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref PrivateAutoScalingGroup
+      ScalingAdjustment: '1'
+
+  CPUHighAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    DeletionPolicy: Delete
+    Properties:
+      AlarmDescription: Alarm if CPU too high or metric disappears indicating instance is down
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '1'
+      Threshold: '70' 
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref ScalingPolicy77
+
+  CPULowAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    DeletionPolicy: Delete
+    Properties:
+      AlarmDescription: Alarm if CPU too low indicating instance is idle
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '1'
+      Threshold: '30' 
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref ScalingPolicy77
+
+  WebALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DeletionPolicy: Delete
+    Properties:
+      Name: WebTargetGroup
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      VpcId: !Ref VPC
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /index.html
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+
+  WebALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DeletionPolicy: Delete
+    Properties:
+      Type: application
+      Name: WebALB
+      Scheme: internet-facing
+      Subnets:
+        - !Ref PublicSubnet1A
+        - !Ref PublicSubnet2B
+      SecurityGroups:
+        - !Ref WebALBSecurityGroup
+
+  WebALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DeletionPolicy: Delete
+    Properties:
+      LoadBalancerArn: !Ref WebALB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebALBTargetGroup
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: InstancePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - ec2:DescribeInstances
+                  - ec2:StartInstances
+                  - ec2:StopInstances
+                  - ec2:RebootInstances
+                  - ec2:TerminateInstances
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeInstanceInformation
+                  - ssm:GetConnectionStatus
+                  - ssm:DescribeSessions
+                  - ssm:StartSession
+                  - ssm:TerminateSession
+                  - ssm:UpdateInstanceInformation
+                Resource: '*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DeletionPolicy: Delete
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2Role
