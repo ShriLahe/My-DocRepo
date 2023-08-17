@@ -1,0 +1,325 @@
+Parameters:
+  VPC:
+    Description: Select VPC from the available VPCs in your account.
+    Type: AWS::EC2::VPC::Id
+
+  PublicSubnet1A:
+    Description: Select Public Subnet 1A.
+    Type: AWS::EC2::Subnet::Id
+
+  PrivateSubnet1:
+    Description: Select Private Subnet 1.
+    Type: AWS::EC2::Subnet::Id
+
+  PrivateSubnet2:
+    Description: Select Private Subnet 2.
+    Type: AWS::EC2::Subnet::Id
+
+  PrivateSubnet3:
+    Description: Select Private Subnet 3.
+    Type: AWS::EC2::Subnet::Id
+
+  PrivateSubnet4:
+    Description: Select Private Subnet 4.
+    Type: AWS::EC2::Subnet::Id
+
+  ClusterName:
+    Description: The name of the RDS cluster to be used in the IAM policy.
+    Type: String
+    Default: ChineloCluster 
+
+Mappings:
+  Settings:
+    MySQL:
+      Engine: MySQL
+      Version: '5.7'
+
+Resources:
+  MyLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    DeletionPolicy: Delete
+    Properties:
+      Handler: <BASE OF FILENAME STORED IN 1ST ZIP FILE>.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: <YOUR S3 BUCKET NAME GOES HERE>
+        S3Key: <FILENAME OF 1ST LAMBDA FUNCTION FILE STORED IN S3 BUCKET>
+      Runtime: nodejs14.x
+      Timeout: 100
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    DeletionPolicy: Delete
+    Properties:
+      Handler: <BASE OF FILENAME STORED IN 2ND ZIP FILE>.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: <YOUR S3 BUCKET NAME GOES HERE>
+        S3Key: <FILENAME OF 2ND LAMBDA FUNCTION FILE STORED IN S3 BUCKET>.zip
+      Runtime: nodejs14.x
+      Timeout: 100
+      Environment: 
+        Variables: 
+          DB_HOST: !ImportValue MyRDSEndpoint
+          DB_USER: !ImportValue MyMasterUsername
+          DB_PASSWORD: !ImportValue MyMasterUserPassword
+          DB_NAME: 'ChineloDatabase'
+      VpcConfig:
+        SubnetIds: 
+          - !Ref PublicSubnet1A
+          - !Ref PrivateSubnet3
+          - !Ref PrivateSubnet4
+        SecurityGroupIds:
+          - !ImportValue RDSAccessSecurityGroupOutput
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RDSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBInstances
+                  - rds:CreateDBInstance
+                  - rds:StartDBInstance
+                  - rds:StopDBInstance
+                  - rds:ModifyDBInstance
+                  - rds:DeleteDBInstance
+                Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - arn:aws:s3:::<YOUR S3 BUCKET NAME GOES HERE>/*
+        - PolicyName: CloudWatchLogsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+        - PolicyName: VPCAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: "*"
+        - PolicyName: RDSDataAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds-data:ExecuteStatement
+                  - rds-data:BeginTransaction
+                  - rds-data:CommitTransaction
+                  - rds-data:RollbackTransaction
+                Resource: !Sub 'arn:aws:rds-data:${AWS::Region}:${AWS::AccountId}:cluster:${ClusterName}/ChineloDatabase'
+              - Effect: Allow
+                Action:
+                  - rds-data:ExecuteStatement
+                Resource: !Sub 'arn:aws:rds-data:${AWS::Region}:${AWS::AccountId}:cluster:${ClusterName}/ChineloDatabase/Customers'
+              - Effect: Allow
+                Action:
+                  - rds-data:ExecuteStatement
+                Resource: !Sub 'arn:aws:rds-data:${AWS::Region}:${AWS::AccountId}:cluster:${ClusterName}/ChineloDatabase/Products'
+              - Effect: Allow
+                Action:
+                  - rds-data:ExecuteStatement
+                Resource: !Sub 'arn:aws:rds-data:${AWS::Region}:${AWS::AccountId}:cluster:${ClusterName}/ChineloDatabase/Orders'
+
+  APIGateway:
+    Type: AWS::ApiGateway::RestApi
+    DeletionPolicy: Delete
+    Properties:
+      Name: ECommerceAPI
+      Description: API Gateway for the frontend
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  APIResourceUserInput:
+    Type: AWS::ApiGateway::Resource
+    DeletionPolicy: Delete
+    Properties:
+      RestApiId: !Ref APIGateway
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: userinput
+
+  APIResourceUserInputOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    DeletionPolicy: Delete
+    Properties:
+      HttpMethod: OPTIONS
+      ResourceId: !Ref APIResourceUserInput
+      RestApiId: !Ref APIGateway
+      AuthorizationType: NONE
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Oauth-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+
+  APIResourceUserInputMethod:
+    Type: AWS::ApiGateway::Method
+    DeletionPolicy: Delete
+    Properties:
+      HttpMethod: POST
+      ResourceId: !Ref APIResourceUserInput
+      RestApiId: !Ref APIGateway
+      AuthorizationType: NONE
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Oauth-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        PassthroughBehavior: WHEN_NO_MATCH
+        ContentHandling: CONVERT_TO_TEXT
+
+  LambdaPermissionForAPIGatewayUserInput:
+    Type: AWS::Lambda::Permission
+    DeletionPolicy: Delete
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*/POST/userinput
+
+  APIResourceOrder:
+    Type: AWS::ApiGateway::Resource
+    DeletionPolicy: Delete
+    Properties:
+      RestApiId: !Ref APIGateway
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: order
+
+  APIResourceOrderOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    DeletionPolicy: Delete
+    Properties:
+      HttpMethod: OPTIONS
+      ResourceId: !Ref APIResourceOrder
+      RestApiId: !Ref APIGateway
+      AuthorizationType: NONE
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Oauth-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+
+  APIResourceOrderMethod:
+    Type: AWS::ApiGateway::Method
+    DeletionPolicy: Delete
+    Properties:
+      HttpMethod: POST
+      ResourceId: !Ref APIResourceOrder
+      RestApiId: !Ref APIGateway
+      AuthorizationType: NONE
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Oauth-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        PassthroughBehavior: WHEN_NO_MATCH
+        ContentHandling: CONVERT_TO_TEXT
+
+
+  LambdaPermissionForAPIGatewayOrder:
+    Type: AWS::Lambda::Permission
+    DeletionPolicy: Delete
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*/POST/order
+
+  Deployment:
+    Type: AWS::ApiGateway::Deployment
+    DeletionPolicy: Delete
+    DependsOn: 
+      - APIResourceUserInputMethod
+      - APIResourceOrderMethod
+    Properties:
+      RestApiId: !Ref APIGateway
+      Description: API deployment
+
+  Stage:
+    Type: AWS::ApiGateway::Stage
+    DeletionPolicy: Delete
+    Properties:
+      RestApiId: !Ref APIGateway
+      DeploymentId: !Ref Deployment
+      StageName: prod
+
+Outputs:
+  LambdaFunctionARN:
+    Description: The ARN of the Lambda function
+    Value: !GetAtt LambdaFunction.Arn
+
+  APIGatewayEndpoint:
+    Description: The endpoint URL of the API Gateway
+    Value: !Sub 'https://${APIGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/'
