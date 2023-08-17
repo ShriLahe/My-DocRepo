@@ -1,0 +1,269 @@
+Parameters:
+  VPC:
+    Description: Select VPC from the available VPCs in your account.
+    Type: AWS::EC2::VPC::Id
+
+  PrivateSubnet3:
+    Description: Select Private Subnet 3.
+    Type: AWS::EC2::Subnet::Id
+
+  PrivateSubnet4:
+    Description: Select Private Subnet 4.
+    Type: AWS::EC2::Subnet::Id
+
+  PublicSubnet1A:
+    Description: Public Subnet to Attach to NatGateway1.
+    Type: AWS::EC2::Subnet::Id
+
+  PrivateRouteTable:
+    Description: Enter Private Route Table ID.
+    Type: String
+    Default: rtb-xxxxxx
+
+  PublicNetworkAcl:
+    Description: Enter Public Network ACL ID.
+    Type: String
+    Default: acl-xxxxxx
+
+  AllowNatRuleNumber:
+    Description: Enter Public Network ACL Rule Number to Allow Return NAT Traffic.
+    Type: Number
+    Default: '120'
+
+  MasterUsername:
+    Description: Database administration name.
+    Type: String
+    Default: rdsroot
+
+  MasterUserPassword:
+    NoEcho: 'true'
+    Description: Database administration password.
+    Type: String
+    MinLength: '8'
+    AllowedPattern: "[a-zA-Z0-9!@#$%^&*]*"
+    ConstraintDescription: Must only contain upper and lowercase letters, numbers and special characters
+    Default: ChineloCloudFormationMasterUserPassword
+
+  BackupRetentionPeriod:
+    Description: Enter Backup Retention Period in Days.
+    Type: Number
+    Default: '5'
+
+  PreferredBackupWindow:
+    Description: Enter Preferred Backup Window Time.
+    Type: String
+    Default: 15:00-17:00
+
+  PreferredMaintenanceWindow:
+    Description: Enter Preferred Maintenance Window Time.
+    Type: String
+    Default: Sun:18:00-Sun:22:00
+
+  AllocatedStorage:
+    Default: '15'
+    Description: Enter the size of the database (GB)
+    Type: Number
+    MinValue: '5'
+    MaxValue: '6144'
+    ConstraintDescription: Must be between 5-6144
+
+  SnapshotOnDelete:
+    Description: Do you want to create a Snapshot on instance delete?
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+  AutoMinorVersionUpgrade:
+    Description: Do you want to allow automatic minor version upgrade?
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+  InstanceType:
+    Description: Select Instance Type.
+    Type: String
+    Default: db.t2.micro
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+  TcpPort:
+    Description: Enter RDS Listening TCP Port number.
+    Type: Number
+    Default: '3306'
+
+  MultiAvailabilityZone:
+    Description: Do you want to Enable Multi Availability Zones?
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+Mappings:
+  Settings:
+    MySQL:
+      Engine: MySQL
+      Version: '5.7'
+
+Resources:
+  NatEIP1:
+    Type: AWS::EC2::EIP
+    DeletionPolicy: Delete
+    Properties:
+      Domain: VPC
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    DeletionPolicy: Delete
+    DependsOn: NatEIP1
+    Properties:
+      AllocationId: !GetAtt NatEIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1A
+
+  InboundPublicNetworkAclAllowHTTP:
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Delete
+    Properties:
+      NetworkAclId: !Ref PublicNetworkAcl
+      RuleNumber:
+        Ref: AllowNatRuleNumber
+      Protocol: '6'
+      RuleAction: allow
+      Egress: 'false'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '80'
+        To: '80'
+
+  InboundPublicNetworkAclAllowSSH:
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Delete
+    Properties:
+      NetworkAclId: !Ref PublicNetworkAcl
+      RuleNumber: '140'
+      Protocol: '6'
+      RuleAction: allow
+      Egress: 'false'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '22'
+        To: '22'
+
+  OutboundPublicNetworkAclAllow:
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Delete
+    Properties:
+      NetworkAclId: !Ref PublicNetworkAcl
+      RuleNumber: '150'
+      Protocol: '6'
+      RuleAction: allow
+      Egress: 'true'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '0'
+        To: '65535'
+
+  RDSAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
+    Properties:
+      GroupDescription: Allow access to RDS instance
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp 
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    DeletionPolicy: Delete
+    Properties:
+      DBSubnetGroupDescription:
+        Fn::Join:
+          - ''
+          - - 'RDS Subnet Group for '
+            - Ref: AWS::StackName
+      SubnetIds:
+        - Ref: PrivateSubnet3
+        - Ref: PrivateSubnet4
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    DependsOn:
+      - RDSSubnetGroup
+      - RDSAccessSecurityGroup
+    Properties:
+      AllocatedStorage:
+        Ref: AllocatedStorage
+      AllowMajorVersionUpgrade: 'false'
+      AutoMinorVersionUpgrade:
+        Ref: AutoMinorVersionUpgrade
+      BackupRetentionPeriod:
+        Ref: BackupRetentionPeriod
+      DBInstanceClass:
+        Ref: InstanceType
+      DBInstanceIdentifier:
+        Ref: AWS::StackName
+      DBName: ChineloDatabase
+      DBSubnetGroupName:
+        Ref: RDSSubnetGroup
+      Engine:
+        Fn::FindInMap:
+          - Settings
+          - MySQL
+          - Engine
+      EngineVersion:
+        Fn::FindInMap:
+          - Settings
+          - MySQL
+          - Version
+      MasterUsername:
+        Ref: MasterUsername
+      MasterUserPassword:
+        Ref: MasterUserPassword
+      MultiAZ:
+        Ref: MultiAvailabilityZone
+      Port:
+        Ref: TcpPort
+      PreferredBackupWindow:
+        Ref: PreferredBackupWindow
+      PreferredMaintenanceWindow:
+        Ref: PreferredMaintenanceWindow
+      PubliclyAccessible: 'false'
+      StorageEncrypted: 'false'
+      StorageType: gp2
+      VPCSecurityGroups:
+        - Ref: RDSAccessSecurityGroup
+Outputs:
+  RDSAccessSecurityGroupOutput:
+    Description: Security Group ID for RDS Access
+    Value: !Ref RDSAccessSecurityGroup
+    Export:
+      Name: RDSAccessSecurityGroupOutput
+
+  MyMasterUserPasswordOutput:
+    Description: The master user password for the RDS instance.
+    Value: !Ref MasterUserPassword
+    Export:
+      Name: MyMasterUserPassword
+
+  MyMasterUsernameOutput:
+    Description: The master user name for the RDS instance.
+    Value: !Ref MasterUsername
+    Export:
+      Name: MyMasterUsername
+
+  MyRDSEndpointOutput:
+    Description: The RDS Endpoint for the RDS instance.
+    Value: !GetAtt RDSInstance.Endpoint.Address
+    Export:
+      Name: MyRDSEndpoint
